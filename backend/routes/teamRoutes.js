@@ -3,28 +3,22 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { validate, teamSchema } = require('../middleware/validationMiddleware');
 const {
-  getAllTeams,
-  getTeamById,
-  getTeamsByDepartment,
-  getTeamsByCompany,
+  getTeams,
+  getTeam,
   createTeam,
   updateTeam,
   deleteTeam
 } = require('../controllers/teamController');
 
-router.route('/')
-  .get(protect, getAllTeams)
+router
+  .route('/')
+  .get(protect, getTeams)
   .post(protect, authorize('admin'), validate(teamSchema), createTeam);
 
-router.route('/:id')
-  .get(protect, getTeamById)
+router
+  .route('/:id')
+  .get(protect, getTeam)
   .put(protect, authorize('admin'), validate(teamSchema), updateTeam)
   .delete(protect, authorize('admin'), deleteTeam);
-
-router.route('/department/:departmentId')
-  .get(protect, getTeamsByDepartment);
-
-router.route('/company/:companyId')
-  .get(protect, getTeamsByCompany);
 
 module.exports = router;

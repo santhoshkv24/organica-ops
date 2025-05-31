@@ -1,26 +1,59 @@
-const { CustomerCompany } = require('../models');
+const { query, getOne, insert, update, remove } = require('../utils/dbUtils');
 
 // Get all customer companies
-const getAllCustomerCompanies = async (req, res) => {
+const getCustomerCompanies = async (req, res) => {
   try {
-    const customerCompanies = await CustomerCompany.findAll();
-    res.status(200).json({ success: true, count: customerCompanies.length, data: customerCompanies });
+    const companies = await query(`
+      SELECT cc.*,
+             COUNT(cd.customer_id) as total_customers
+      FROM customer_companies cc
+      LEFT JOIN customer_details cd ON cc.customer_company_id = cd.customer_company_id
+      GROUP BY cc.customer_company_id
+      ORDER BY cc.created_at DESC
+    `);
+    
+    res.status(200).json({
+      success: true,
+      count: companies.length,
+      data: companies
+    });
   } catch (error) {
+    console.error('Error getting customer companies:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// Get customer company by ID
-const getCustomerCompanyById = async (req, res) => {
+// Get single customer company
+const getCustomerCompany = async (req, res) => {
   try {
-    const customerCompany = await CustomerCompany.findByPk(req.params.id);
-    
-    if (!customerCompany) {
+    const company = await getOne(`
+      SELECT cc.*,
+             COUNT(cd.customer_id) as total_customers
+      FROM customer_companies cc
+      LEFT JOIN customer_details cd ON cc.customer_company_id = cd.customer_company_id
+      WHERE cc.customer_company_id = ?
+      GROUP BY cc.customer_company_id
+    `, [req.params.id]);
+
+    if (!company) {
       return res.status(404).json({ message: 'Customer company not found' });
     }
-    
-    res.status(200).json({ success: true, data: customerCompany });
+
+    // Get customers of this company
+    const customers = await query(`
+      SELECT * FROM customer_details
+      WHERE customer_company_id = ?
+      ORDER BY created_at DESC
+    `, [req.params.id]);
+
+    company.customers = customers;
+
+    res.status(200).json({
+      success: true,
+      data: company
+    });
   } catch (error) {
+    console.error('Error getting customer company:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -28,9 +61,31 @@ const getCustomerCompanyById = async (req, res) => {
 // Create customer company
 const createCustomerCompany = async (req, res) => {
   try {
-    const customerCompany = await CustomerCompany.create(req.body);
-    res.status(201).json({ success: true, data: customerCompany });
+    const { name, industry, address, contact_email, contact_phone } = req.body;
+
+    const companyId = await insert('customer_companies', {
+      name,
+      industry,
+      address,
+      contact_email,
+      contact_phone
+    });
+
+    const company = await getOne(`
+      SELECT cc.*,
+             COUNT(cd.customer_id) as total_customers
+      FROM customer_companies cc
+      LEFT JOIN customer_details cd ON cc.customer_company_id = cd.customer_company_id
+      WHERE cc.customer_company_id = ?
+      GROUP BY cc.customer_company_id
+    `, [companyId]);
+
+    res.status(201).json({
+      success: true,
+      data: company
+    });
   } catch (error) {
+    console.error('Error creating customer company:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -38,16 +93,40 @@ const createCustomerCompany = async (req, res) => {
 // Update customer company
 const updateCustomerCompany = async (req, res) => {
   try {
-    const customerCompany = await CustomerCompany.findByPk(req.params.id);
-    
-    if (!customerCompany) {
+    const { name, industry, address, contact_email, contact_phone } = req.body;
+
+    const result = await update(
+      'customer_companies',
+      {
+        name,
+        industry,
+        address,
+        contact_email,
+        contact_phone
+      },
+      'customer_company_id = ?',
+      [req.params.id]
+    );
+
+    if (result === 0) {
       return res.status(404).json({ message: 'Customer company not found' });
     }
-    
-    await customerCompany.update(req.body);
-    
-    res.status(200).json({ success: true, data: customerCompany });
+
+    const company = await getOne(`
+      SELECT cc.*,
+             COUNT(cd.customer_id) as total_customers
+      FROM customer_companies cc
+      LEFT JOIN customer_details cd ON cc.customer_company_id = cd.customer_company_id
+      WHERE cc.customer_company_id = ?
+      GROUP BY cc.customer_company_id
+    `, [req.params.id]);
+
+    res.status(200).json({
+      success: true,
+      data: company
+    });
   } catch (error) {
+    console.error('Error updating customer company:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -55,23 +134,29 @@ const updateCustomerCompany = async (req, res) => {
 // Delete customer company
 const deleteCustomerCompany = async (req, res) => {
   try {
-    const customerCompany = await CustomerCompany.findByPk(req.params.id);
-    
-    if (!customerCompany) {
+    const result = await remove(
+      'customer_companies',
+      'customer_company_id = ?',
+      [req.params.id]
+    );
+
+    if (result === 0) {
       return res.status(404).json({ message: 'Customer company not found' });
     }
-    
-    await customerCompany.destroy();
-    
-    res.status(200).json({ success: true, data: {} });
+
+    res.status(200).json({
+      success: true,
+      data: {}
+    });
   } catch (error) {
+    console.error('Error deleting customer company:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 module.exports = {
-  getAllCustomerCompanies,
-  getCustomerCompanyById,
+  getCustomerCompanies,
+  getCustomerCompany,
   createCustomerCompany,
   updateCustomerCompany,
   deleteCustomerCompany

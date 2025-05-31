@@ -1,39 +1,46 @@
-const { Department } = require('../models');
+const { query, getOne, insert, update, remove } = require('../utils/dbUtils');
 
 // Get all departments
-const getAllDepartments = async (req, res) => {
+const getDepartments = async (req, res) => {
   try {
-    const departments = await Department.findAll();
-    res.status(200).json({ success: true, count: departments.length, data: departments });
+    const departments = await query(`
+      SELECT d.*, c.name as company_name 
+      FROM departments d
+      LEFT JOIN companies c ON d.company_id = c.company_id
+      ORDER BY d.created_at DESC
+    `);
+    
+    res.status(200).json({
+      success: true,
+      count: departments.length,
+      data: departments
+    });
   } catch (error) {
+    console.error('Error getting departments:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// Get department by ID
-const getDepartmentById = async (req, res) => {
+// Get single department
+const getDepartment = async (req, res) => {
   try {
-    const department = await Department.findByPk(req.params.id);
-    
+    const department = await getOne(`
+      SELECT d.*, c.name as company_name 
+      FROM departments d
+      LEFT JOIN companies c ON d.company_id = c.company_id
+      WHERE d.department_id = ?
+    `, [req.params.id]);
+
     if (!department) {
       return res.status(404).json({ message: 'Department not found' });
     }
-    
-    res.status(200).json({ success: true, data: department });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
 
-// Get departments by company
-const getDepartmentsByCompany = async (req, res) => {
-  try {
-    const departments = await Department.findAll({
-      where: { company_id: req.params.companyId }
+    res.status(200).json({
+      success: true,
+      data: department
     });
-    
-    res.status(200).json({ success: true, count: departments.length, data: departments });
   } catch (error) {
+    console.error('Error getting department:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -41,9 +48,39 @@ const getDepartmentsByCompany = async (req, res) => {
 // Create department
 const createDepartment = async (req, res) => {
   try {
-    const department = await Department.create(req.body);
-    res.status(201).json({ success: true, data: department });
+    const { name, company_id, description } = req.body;
+
+    // Check if company exists
+    if (company_id) {
+      const company = await getOne(
+        'SELECT company_id FROM companies WHERE company_id = ?',
+        [company_id]
+      );
+
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+    }
+
+    const departmentId = await insert('departments', {
+      name,
+      company_id,
+      description
+    });
+
+    const department = await getOne(`
+      SELECT d.*, c.name as company_name 
+      FROM departments d
+      LEFT JOIN companies c ON d.company_id = c.company_id
+      WHERE d.department_id = ?
+    `, [departmentId]);
+
+    res.status(201).json({
+      success: true,
+      data: department
+    });
   } catch (error) {
+    console.error('Error creating department:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -51,16 +88,48 @@ const createDepartment = async (req, res) => {
 // Update department
 const updateDepartment = async (req, res) => {
   try {
-    const department = await Department.findByPk(req.params.id);
-    
-    if (!department) {
+    const { name, company_id, description } = req.body;
+
+    // Check if company exists if company_id is provided
+    if (company_id) {
+      const company = await getOne(
+        'SELECT company_id FROM companies WHERE company_id = ?',
+        [company_id]
+      );
+
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+    }
+
+    const result = await update(
+      'departments',
+      {
+        name,
+        company_id,
+        description
+      },
+      'department_id = ?',
+      [req.params.id]
+    );
+
+    if (result === 0) {
       return res.status(404).json({ message: 'Department not found' });
     }
-    
-    await department.update(req.body);
-    
-    res.status(200).json({ success: true, data: department });
+
+    const department = await getOne(`
+      SELECT d.*, c.name as company_name 
+      FROM departments d
+      LEFT JOIN companies c ON d.company_id = c.company_id
+      WHERE d.department_id = ?
+    `, [req.params.id]);
+
+    res.status(200).json({
+      success: true,
+      data: department
+    });
   } catch (error) {
+    console.error('Error updating department:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -68,24 +137,29 @@ const updateDepartment = async (req, res) => {
 // Delete department
 const deleteDepartment = async (req, res) => {
   try {
-    const department = await Department.findByPk(req.params.id);
-    
-    if (!department) {
+    const result = await remove(
+      'departments',
+      'department_id = ?',
+      [req.params.id]
+    );
+
+    if (result === 0) {
       return res.status(404).json({ message: 'Department not found' });
     }
-    
-    await department.destroy();
-    
-    res.status(200).json({ success: true, data: {} });
+
+    res.status(200).json({
+      success: true,
+      data: {}
+    });
   } catch (error) {
+    console.error('Error deleting department:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 module.exports = {
-  getAllDepartments,
-  getDepartmentById,
-  getDepartmentsByCompany,
+  getDepartments,
+  getDepartment,
   createDepartment,
   updateDepartment,
   deleteDepartment

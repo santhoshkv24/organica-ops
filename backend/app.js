@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { connectDB } = require('./config/database');
+const corsOptions = require('./config/corsConfig');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 // Import routes
@@ -21,15 +22,32 @@ connectDB();
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// CORS configuration - Must be before other middleware
+app.use(cors(corsOptions));
 
-// Rate limiting
+// Security middleware with adjusted settings for development
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false,
+  })
+);
+
+// Rate limiting - More lenient in development
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests per minute in development
+  message: {
+    status: 429,
+    message: 'Too many requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use(limiter);
+
+// Apply rate limiting to auth routes only
+app.use('/api/auth', limiter);
 
 // Body parser
 app.use(express.json());
@@ -37,12 +55,6 @@ app.use(express.urlencoded({ extended: false }));
 
 // Cookie parser
 app.use(cookieParser());
-
-// CORS
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : 'http://localhost:3000',
-  credentials: true
-}));
 
 // Routes
 app.use('/api/auth', authRoutes);
