@@ -9,11 +9,9 @@ const CompanyForm = () => {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    phone_no: '',
-    founded_date: '',
-    email: '',
-    fax: '',
-    branch_code: '',
+    contact_phone: '', // Updated field name to match backend
+    contact_email: '', // Updated field name to match backend
+    // Removed fields not in the stored procedure (founded_date, fax, branch_code)
   });
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -26,9 +24,13 @@ const CompanyForm = () => {
       getCompanyById(id)
         .then(response => {
           const company = response.data;
-          // Format date for input type='date'
-          const formattedDate = company.founded_date ? new Date(company.founded_date).toISOString().split('T')[0] : '';
-          setFormData({ ...company, founded_date: formattedDate });
+          // Map API response fields to our form fields
+          setFormData({
+            name: company.name || '',
+            address: company.address || '',
+            contact_phone: company.contact_phone || '',
+            contact_email: company.contact_email || ''
+          });
         })
         .catch(err => {
           console.error("Error fetching company:", err);
@@ -51,20 +53,13 @@ const CompanyForm = () => {
     setLoading(true);
     setFormError('');
 
-    // Prepare data, handle empty strings vs null for optional fields if needed
-    const dataToSubmit = { ...formData };
-    // Convert empty date string back to null if necessary for the backend
-    if (dataToSubmit.founded_date === '') {
-      dataToSubmit.founded_date = null;
-    }
-
     try {
       if (id) {
         // Update existing company
-        await updateCompany(id, dataToSubmit);
+        await updateCompany(id, formData);
       } else {
         // Create new company
-        await createCompany(dataToSubmit);
+        await createCompany(formData);
       }
       navigate('/companies'); // Redirect to list after successful save
     } catch (err) {
@@ -102,33 +97,15 @@ const CompanyForm = () => {
                 </CCol>
               </CRow>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="phone_no" className="col-sm-2 col-form-label">Phone</CFormLabel>
+                <CFormLabel htmlFor="contact_phone" className="col-sm-2 col-form-label">Phone</CFormLabel>
                 <CCol sm={10}>
-                  <CFormInput type="text" id="phone_no" name="phone_no" value={formData.phone_no || ''} onChange={handleChange} />
+                  <CFormInput type="text" id="contact_phone" name="contact_phone" value={formData.contact_phone || ''} onChange={handleChange} />
                 </CCol>
               </CRow>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="email" className="col-sm-2 col-form-label">Email</CFormLabel>
+                <CFormLabel htmlFor="contact_email" className="col-sm-2 col-form-label">Email</CFormLabel>
                 <CCol sm={10}>
-                  <CFormInput type="email" id="email" name="email" value={formData.email || ''} onChange={handleChange} />
-                </CCol>
-              </CRow>
-              <CRow className="mb-3">
-                <CFormLabel htmlFor="founded_date" className="col-sm-2 col-form-label">Founded Date</CFormLabel>
-                <CCol sm={10}>
-                  <CFormInput type="date" id="founded_date" name="founded_date" value={formData.founded_date || ''} onChange={handleChange} />
-                </CCol>
-              </CRow>
-              <CRow className="mb-3">
-                <CFormLabel htmlFor="fax" className="col-sm-2 col-form-label">Fax</CFormLabel>
-                <CCol sm={10}>
-                  <CFormInput type="text" id="fax" name="fax" value={formData.fax || ''} onChange={handleChange} />
-                </CCol>
-              </CRow>
-              <CRow className="mb-3">
-                <CFormLabel htmlFor="branch_code" className="col-sm-2 col-form-label">Branch Code</CFormLabel>
-                <CCol sm={10}>
-                  <CFormInput type="text" id="branch_code" name="branch_code" value={formData.branch_code || ''} onChange={handleChange} />
+                  <CFormInput type="email" id="contact_email" name="contact_email" value={formData.contact_email || ''} onChange={handleChange} />
                 </CCol>
               </CRow>
               <CRow>

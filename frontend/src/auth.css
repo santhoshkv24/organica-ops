@@ -1,0 +1,64 @@
+/* Login Page Styles */
+.auth-page-container {
+  background-color: #ffffff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+  max-width: 450px;
+  margin: 0 auto;
+  background-color: #ffffff;
+}
+
+.auth-logo {
+  max-height: 80px;
+  width: auto;
+  margin-bottom: 1.5rem;
+}
+
+.auth-title {
+  color: #212529;
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+
+.auth-input-group {
+  margin-bottom: 1.25rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.auth-input {
+  padding: 0.75rem 1rem !important;
+  height: auto !important;
+  font-size: 1rem !important;
+}
+
+.auth-input-icon {
+  background-color: #ffffff !important;
+  border-right: none !important;
+}
+
+.auth-button {
+  padding: 0.75rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.auth-turnstile-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.cf-turnstile {
+  margin: 0 auto;
+}

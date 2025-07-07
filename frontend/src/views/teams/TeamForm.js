@@ -1,59 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CButton, CCard, CCardBody, CCardHeader, CCol, CForm, CFormInput, CFormLabel, CFormSelect, CRow, CSpinner, CFormTextarea } from '@coreui/react';
-import { getTeamById, createTeam, updateTeam, getDepartments, getCompanies } from '../../services/apiService';
+import { getTeamById, createTeam, updateTeam, getCompanies } from '../../services/api';
 
 const TeamForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
-    department_id: '',
-    company_id: '', // Added company_id
+    branch_id: '',
     description: '',
   });
-  const [departments, setDepartments] = useState([]);
-  const [companies, setCompanies] = useState([]); // Added companies state
-  const [filteredDepartments, setFilteredDepartments] = useState([]); // Departments filtered by company
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [pageLoading, setPageLoading] = useState(false);
 
   useEffect(() => {
     setPageLoading(true);
-    // Fetch companies and departments first
-    Promise.all([getCompanies(), getDepartments()])
-      .then(([compResponse, deptResponse]) => {
-        const fetchedCompanies = Array.isArray(compResponse?.data) ? compResponse.data : [];
-        const fetchedDepartments = Array.isArray(deptResponse?.data) ? deptResponse.data : [];
-        setCompanies(fetchedCompanies);
-        setDepartments(fetchedDepartments);
+    // Fetch branches first
+    getCompanies()
+      .then((response) => {
+        const fetchedBranches = response?.data?.data || response?.data || [];
+        setBranches(fetchedBranches);
 
         if (id) {
           // If editing, fetch existing team data
           return getTeamById(id);
         } else {
-          // If creating, set default company/department if available
-          if (fetchedCompanies.length > 0) {
-            const defaultCompanyId = fetchedCompanies[0].id;
-            setFormData(prev => ({ ...prev, company_id: defaultCompanyId }));
-            // Filter departments for the default company
-            const initialFilteredDepts = fetchedDepartments.filter(dept => dept.company_id === defaultCompanyId);
-            setFilteredDepartments(initialFilteredDepts);
-            if (initialFilteredDepts.length > 0) {
-              setFormData(prev => ({ ...prev, department_id: initialFilteredDepts[0].id }));
-            }
+          // If creating, set default branch if available
+          if (fetchedBranches.length > 0) {
+            const defaultBranchId = fetchedBranches[0].branch_id || fetchedBranches[0].company_id;
+              setFormData(prev => ({ 
+                ...prev, 
+              branch_id: defaultBranchId.toString() 
+              }));
           }
-          return Promise.resolve(null); // Resolve null if creating
+          return Promise.resolve(null);
         }
       })
       .then(response => {
-        if (response) { // Only set form data if editing
+        if (response && response.data) {
           const teamData = response.data;
-          setFormData(teamData);
-          // Filter departments based on the team's company
-          const currentFilteredDepts = departments.filter(dept => dept.company_id === teamData.company_id);
-          setFilteredDepartments(currentFilteredDepts);
+          
+          setFormData({
+            name: teamData.name || '',
+            branch_id: teamData.branch_id ? teamData.branch_id.toString() : '',
+            description: teamData.description || ''
+          });
         }
       })
       .catch(err => {
@@ -61,29 +55,14 @@ const TeamForm = () => {
         setFormError('Failed to load necessary data.');
       })
       .finally(() => setPageLoading(false));
-  }, [id]); // Rerun if ID changes, but departments dependency is handled internally
-
-  // Effect to filter departments when company changes
-  useEffect(() => {
-    if (formData.company_id) {
-      const newFilteredDepts = departments.filter(dept => dept.company_id === parseInt(formData.company_id));
-      setFilteredDepartments(newFilteredDepts);
-      // Reset department selection if the current one is not in the new list
-      if (!newFilteredDepts.find(dept => dept.id === parseInt(formData.department_id))) {
-        setFormData(prev => ({ ...prev, department_id: newFilteredDepts.length > 0 ? newFilteredDepts[0].id : '' }));
-      }
-    } else {
-      setFilteredDepartments([]); // Clear departments if no company selected
-      setFormData(prev => ({ ...prev, department_id: '' }));
-    }
-  }, [formData.company_id, departments]);
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value,
-    }));
+      setFormData(prevState => ({
+        ...prevState,
+        [name]: value,
+      }));
   };
 
   const handleSubmit = async (e) => {
@@ -91,17 +70,17 @@ const TeamForm = () => {
     setLoading(true);
     setFormError('');
 
-    if (!formData.company_id || !formData.department_id) {
-        setFormError('Please select both a company and a department.');
+    if (!formData.branch_id) {
+        setFormError('Please select a branch.');
         setLoading(false);
         return;
     }
 
-    // Ensure IDs are numbers if required by backend
+    // Submit just the fields needed by the backend stored procedure
     const dataToSubmit = {
-        ...formData,
-        company_id: parseInt(formData.company_id),
-        department_id: parseInt(formData.department_id),
+        name: formData.name,
+        branch_id: parseInt(formData.branch_id, 10),
+        description: formData.description || ''
     };
 
     try {
@@ -140,46 +119,23 @@ const TeamForm = () => {
                 </CCol>
               </CRow>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="company_id" className="col-sm-2 col-form-label">Company *</CFormLabel>
+                <CFormLabel htmlFor="branch_id" className="col-sm-2 col-form-label">Branch *</CFormLabel>
                 <CCol sm={10}>
                   <CFormSelect
-                    id="company_id"
-                    name="company_id"
-                    value={formData.company_id}
+                    id="branch_id"
+                    name="branch_id"
+                    value={formData.branch_id}
                     onChange={handleChange}
                     required
-                    aria-label="Select Company"
+                    aria-label="Select Branch"
                   >
-                    <option value="">Select a Company</option>
-                    {companies.map(company => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
+                    <option value="">Select a Branch</option>
+                    {branches.map(branch => (
+                      <option key={branch.branch_id || branch.company_id} value={branch.branch_id || branch.company_id}>
+                        {branch.name}
                       </option>
                     ))}
                   </CFormSelect>
-                </CCol>
-              </CRow>
-              <CRow className="mb-3">
-                <CFormLabel htmlFor="department_id" className="col-sm-2 col-form-label">Department *</CFormLabel>
-                <CCol sm={10}>
-                  <CFormSelect
-                    id="department_id"
-                    name="department_id"
-                    value={formData.department_id}
-                    onChange={handleChange}
-                    required
-                    disabled={!formData.company_id || filteredDepartments.length === 0} // Disable if no company or filtered depts
-                    aria-label="Select Department"
-                  >
-                    <option value="">Select a Department</option>
-                    {filteredDepartments.map(dept => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </CFormSelect>
-                  {!formData.company_id && <small className='text-muted'>Please select a company first.</small>}
-                  {formData.company_id && filteredDepartments.length === 0 && <small className='text-danger'>No departments found for the selected company.</small>}
                 </CCol>
               </CRow>
               <CRow className="mb-3">
@@ -190,7 +146,7 @@ const TeamForm = () => {
               </CRow>
               <CRow>
                 <CCol sm={{ span: 10, offset: 2 }}>
-                  <CButton type="submit" color="primary" disabled={loading || !formData.department_id} className="me-2">
+                  <CButton type="submit" color="primary" disabled={loading || !formData.branch_id} className="me-2">
                     {loading ? <CSpinner size="sm" /> : (id ? 'Update' : 'Create')}
                   </CButton>
                   <CButton type="button" color="secondary" onClick={() => navigate('/teams')}>

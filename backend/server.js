@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./app');
 const { connectDB, pool } = require('./config/database');
+const { setupStoredProcedures } = require('./config/setupStoredProcedures');
 
 const PORT = process.env.PORT || 5000;
 
@@ -22,7 +23,6 @@ const startServer = async () => {
   try {
     // Connect to database
     await connectDB();
-    
     // Check if database is initialized
     const hasData = await checkDatabaseTables();
     if (!hasData) {
@@ -30,7 +30,10 @@ const startServer = async () => {
         '\n⚠️  Database appears to be empty. If this is your first time running the server, please run:\n' +
         'node scripts/setupDatabase.js\n' +
         'to initialize the database schema and sample data.\n'
-      );
+      );  
+    } else {
+      // Setup stored procedures
+      await setupStoredProcedures();
     }
 
     app.listen(PORT, () => {

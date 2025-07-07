@@ -81,14 +81,6 @@ const DataGrid = ({
         <div className="d-flex justify-content-between align-items-center">
           <strong>{title}</strong>
           <div className="d-flex gap-2">
-            {searchable && (
-              <CFormInput
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            )}
             <CDropdown>
               <CDropdownToggle color="primary" variant="outline">
                 <CIcon icon={cilOptions} />
@@ -128,7 +120,7 @@ const DataGrid = ({
           </CTableHead>
           <CTableBody>
             {paginatedData.map((item, index) => (
-              <CTableRow key={index}>
+              <CTableRow key={index} >
                 {columns.map((column) => (
                   <CTableDataCell key={column.key}>
                     {column.render

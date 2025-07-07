@@ -1,39 +1,140 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { CButton, CCard, CCardBody, CCol, CContainer, CForm, CFormInput, CInputGroup, CInputGroupText, CRow } from '@coreui/react';
+import React, { useState, useRef } from 'react';
+import {
+  CButton,
+  CCard,
+  CCardBody,
+  CCardGroup,
+  CCol,
+  CContainer,
+  CForm,
+  CFormInput,
+  CInputGroup,
+  CInputGroupText,
+  CRow,
+  CAlert,
+  CSpinner
+} from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilLockLocked, cilUser, cilEnvelopeClosed } from '@coreui/icons';
-import { useAuth } from '../../contexts/AuthContext';
+import { cilUser, cilLockLocked, cilEnvelopeClosed, cilPhone, cilBriefcase } from '@coreui/icons';
+import { useNavigate, Link } from 'react-router-dom';
+import { registerUser } from '../../services/api';
+import Logo from '../../assets/images/logo-c2c2.png';
+import Turnstile from '../../components/Turnstile';
 
 const Register = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
   const navigate = useNavigate();
+  const [formValues, setFormValues] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    'cf-turnstile-response': ''
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [turnstileError, setTurnstileError] = useState('');
+  const turnstileRef = useRef(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues({ ...formValues, [name]: value });
+    // Clear error when user starts typing
+    if (error) setError('');
+  };
+
+  const validateForm = () => {
+    if (!formValues.username) {
+      setError('Username is required');
+      return false;
+    }
+    if (!formValues.email) {
+      setError('Email is required');
+      return false;
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formValues.email)) {
+      setError('Invalid email address');
+      return false;
+    }
+    if (!formValues.password) {
+      setError('Password is required');
+      return false;
+    } else if (formValues.password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return false;
+    }
+    if (formValues.password !== formValues.confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    return true;
+  };
+
+  const handleTurnstileVerify = (token) => {
+    setFormValues(prev => ({
+      ...prev,
+      'cf-turnstile-response': token
+    }));
+    setTurnstileError('');
+  };
+
+  const handleTurnstileError = () => {
+    setTurnstileError('Please complete the security check');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      return setError('Passwords do not match');
+    
+    if (!validateForm()) {
+      return;
     }
-    setError('');
-    setLoading(true);
+
+    if (!formValues['cf-turnstile-response']) {
+      setTurnstileError('Please complete the security check');
+      return;
+    }
+
     try {
-      const { success, message } = await register({ username, email, password });
-      if (success) {
-        navigate('/login');
+      setError('');
+      setSuccess('');
+      setLoading(true);
+
+      const response = await registerUser({
+        username: formValues.username,
+        email: formValues.email,
+        password: formValues.password,
+        'cf-turnstile-response': formValues['cf-turnstile-response']
+      });
+
+      if (response.success) {
+        setSuccess('Registration successful! Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       } else {
-        setError(message);
+        setError(response.message || 'Registration failed. Please try again.');
+        // Reset Turnstile on error
+        if (turnstileRef.current) {
+          turnstileRef.current.reset();
+        }
+        setFormValues(prev => ({
+          ...prev,
+          'cf-turnstile-response': ''
+        }));
       }
     } catch (err) {
-      setError('An error occurred during registration.');
-      console.error(err);
+      console.error('Registration error:', err);
+      setError(err.response?.data?.message || 'An error occurred during registration.');
+      // Reset Turnstile on error
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+      setFormValues(prev => ({
+        ...prev,
+        'cf-turnstile-response': ''
+      }));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -41,74 +142,110 @@ const Register = () => {
       <CContainer>
         <CRow className="justify-content-center">
           <CCol md={9} lg={7} xl={6}>
-            <CCard className="mx-4">
-              <CCardBody className="p-4">
+            <CCardGroup>
+              <CCard className="p-4 shadow-lg">
+                <CCardBody>
+                  <div className="text-center mb-4">
+                    <img src={Logo} style={{ height: '110px', marginBottom: '1rem' }} />
+                    <p className="text-medium-emphasis">Create your account</p>
+                  </div>
+                  
+                  {error && <CAlert color="danger">{error}</CAlert>}
+                  {success && <CAlert color="success">{success}</CAlert>}
+                  
                 <CForm onSubmit={handleSubmit}>
-                  <h1>Register</h1>
-                  <p className="text-medium-emphasis">Create your account</p>
-                  {error && <p className="text-danger">{error}</p>}
                   <CInputGroup className="mb-3">
                     <CInputGroupText>
-                      <CIcon icon={cilUser} />
+                        <CIcon icon={cilUser} />
                     </CInputGroupText>
-                    <CFormInput
-                      placeholder="Username"
-                      autoComplete="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilEnvelopeClosed} />
-                    </CInputGroupText>
+                      <CFormInput
+                        name="username"
+                        placeholder="Username"
+                        autoComplete="username"
+                        value={formValues.username}
+                        onChange={handleChange}
+                        required
+                      />
+                    </CInputGroup>
+                    
+                    <CInputGroup className="mb-3">
+                      <CInputGroupText>@</CInputGroupText>
                     <CFormInput
                       type="email"
+                        name="email"
                       placeholder="Email"
                       autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                        value={formValues.email}
+                        onChange={handleChange}
                       required
                     />
                   </CInputGroup>
+
+                    
                   <CInputGroup className="mb-3">
                     <CInputGroupText>
                       <CIcon icon={cilLockLocked} />
                     </CInputGroupText>
                     <CFormInput
                       type="password"
+                        name="password"
                       placeholder="Password"
                       autoComplete="new-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                        value={formValues.password}
+                        onChange={handleChange}
                       required
                     />
                   </CInputGroup>
+                    
                   <CInputGroup className="mb-4">
                     <CInputGroupText>
                       <CIcon icon={cilLockLocked} />
                     </CInputGroupText>
                     <CFormInput
                       type="password"
-                      placeholder="Repeat password"
+                        name="confirmPassword"
+                        placeholder="Confirm Password"
                       autoComplete="new-password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                        value={formValues.confirmPassword}
+                        onChange={handleChange}
                       required
                     />
                   </CInputGroup>
-                  <div className="d-grid">
-                    <CButton type="submit" color="success" disabled={loading}>
-                      {loading ? 'Creating Account...' : 'Create Account'}
-                    </CButton>
-                  </div>
-                  <div className="text-center mt-3">
-                    <Link to="/login">Already have an account? Login</Link>
-                  </div>
+                    
+                    {/* Turnstile Widget */}
+                    <div className="mb-3">
+                      <Turnstile
+                        ref={turnstileRef}
+                        onVerify={handleTurnstileVerify}
+                        onError={handleTurnstileError}
+                      />
+                      {turnstileError && <div className="text-danger small mt-1">{turnstileError}</div>}
+                    </div>
+                    
+                    <CRow className="mt-3">
+                      <CCol xs={12} className="text-center mb-3">
+                        <CButton 
+                          type="submit" 
+                          color="success" 
+                          className="px-4 w-100" 
+                          disabled={loading}
+                        >
+                          {loading ? <CSpinner size="sm" className="me-2" /> : null}
+                          {loading ? 'Creating Account...' : 'Create Account'}
+                        </CButton>
+                      </CCol>
+                      <CCol xs={12} className="text-center">
+                        <p>Already have an account?{' '}
+                          <Link to="/login" className="text-decoration-none">
+                            <strong>Sign In</strong>
+                          </Link>
+                        </p>
+                      </CCol>
+                    </CRow>
                 </CForm>
               </CCardBody>
             </CCard>
+            </CCardGroup>
           </CCol>
         </CRow>
       </CContainer>

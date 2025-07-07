@@ -14,11 +14,9 @@ const validate = (schema) => {
 const companySchema = Joi.object({
   name: Joi.string().required().max(255),
   address: Joi.string().allow(null, ''),
-  phone_no: Joi.string().max(20).allow(null, ''),
-  founded_date: Joi.date().allow(null),
-  email: Joi.string().email().max(255).allow(null, ''),
-  fax: Joi.string().max(20).allow(null, ''),
-  branch_code: Joi.string().max(50).allow(null, '')
+  contact_phone: Joi.string().max(20).allow(null, ''),
+  contact_email: Joi.string().email().max(255).allow(null, '')
+  // Removed fields not in the stored procedure: founded_date, fax, branch_code
 });
 
 // Department validation schema
@@ -30,54 +28,51 @@ const departmentSchema = Joi.object({
 
 // Team validation schema
 const teamSchema = Joi.object({
-  department_id: Joi.number().integer().required(),
-  company_id: Joi.number().integer().required(),
+  branch_id: Joi.number().integer().required(),
   name: Joi.string().required().max(255),
   description: Joi.string().allow(null, '')
+  // Removed company_id as it's not directly used in team stored procedure
 });
 
 // Employee validation schema
 const employeeSchema = Joi.object({
+  first_name: Joi.string().required().max(255),
+  last_name: Joi.string().required().max(255),
+  email: Joi.string().email().max(255).required(),
+  phone: Joi.string().max(20).allow(null, ''),
+  hire_date: Joi.date().allow(null),
   department_id: Joi.number().integer().allow(null),
-  company_id: Joi.number().integer().required(),
   team_id: Joi.number().integer().allow(null),
-  name: Joi.string().required().max(255),
-  age: Joi.number().integer().min(18).max(100).allow(null),
-  gender: Joi.string().valid('Male', 'Female', 'Other').allow(null, ''),
-  phone_number: Joi.string().max(20).allow(null, ''),
-  email: Joi.string().email().max(255).allow(null, ''),
-  role: Joi.string().max(50).allow(null, ''),
-  address: Joi.string().allow(null, ''),
-  company_email_id: Joi.string().email().max(255).allow(null, ''),
-  qualification: Joi.string().max(255).allow(null, '')
+  position: Joi.string().max(255).allow(null, '')
+  // Removed fields not in stored procedure: company_id, age, gender, etc.
 });
 
 // CustomerCompany validation schema
 const customerCompanySchema = Joi.object({
   name: Joi.string().required().max(255),
+  industry: Joi.string().max(100).allow(null, ''),
   address: Joi.string().allow(null, ''),
-  phone_no: Joi.string().max(20).allow(null, ''),
-  email: Joi.string().email().max(255).allow(null, ''),
-  industry: Joi.string().max(100).allow(null, '')
+  contact_email: Joi.string().email().max(255).allow(null, ''),
+  contact_phone: Joi.string().max(20).allow(null, '')
 });
 
 // CustomerDetails validation schema
 const customerDetailsSchema = Joi.object({
   customer_company_id: Joi.number().integer().allow(null),
-  name: Joi.string().required().max(255),
-  gender: Joi.string().valid('Male', 'Female', 'Other').allow(null, ''),
-  designation: Joi.string().max(50).allow(null, ''),
-  address: Joi.string().allow(null, ''),
-  mobile_no: Joi.string().max(20).allow(null, ''),
-  email: Joi.string().email().max(255).allow(null, '')
+  first_name: Joi.string().required().max(255),
+  last_name: Joi.string().required().max(255),
+  email: Joi.string().email().max(255).required(),
+  phone: Joi.string().max(20).allow(null, ''),
+  position: Joi.string().max(50).allow(null, '')
+  // Removed fields not in stored procedure: gender, address, etc.
 });
 
 // User validation schema
 const userSchema = Joi.object({
   username: Joi.string().required().min(3).max(50),
   email: Joi.string().required().email().max(255),
-  password: Joi.string().required().min(6).max(255),
-  role: Joi.string().valid('admin', 'employee', 'customer').default('employee'),
+  password: Joi.string().min(6).max(255).allow(null, ''),
+  role: Joi.string().valid('admin', 'employee', 'manager').default('employee'),
   employee_id: Joi.number().integer().allow(null),
   customer_id: Joi.number().integer().allow(null)
 });
@@ -85,7 +80,27 @@ const userSchema = Joi.object({
 // Login validation schema
 const loginSchema = Joi.object({
   email: Joi.string().required().email(),
-  password: Joi.string().required()
+  password: Joi.string().required(),
+  'cf-turnstile-response': Joi.string().allow('')
+});
+
+// First-time password validation schema
+const firstTimePasswordSchema = Joi.object({
+  newPassword: Joi.string().required().min(6).max(255)
+});
+
+const forgotPasswordSchema = Joi.object({
+    email: Joi.string().email().required(),
+});
+
+const verifyResetCodeSchema = Joi.object({
+    email: Joi.string().email().required(),
+    code: Joi.string().length(6).required(),
+});
+
+const resetPasswordSchema = Joi.object({
+    token: Joi.string().required(),
+    password: Joi.string().min(6).required(),
 });
 
 module.exports = {
@@ -97,5 +112,11 @@ module.exports = {
   customerCompanySchema,
   customerDetailsSchema,
   userSchema,
-  loginSchema
+  loginSchema,
+  firstTimePasswordSchema,
+  forgotPasswordSchema,
+  verifyResetCodeSchema,
+  resetPasswordSchema
 };
+
+

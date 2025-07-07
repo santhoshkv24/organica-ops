@@ -7,17 +7,36 @@
     "@coreui/icons": "^3.0.1",
     "@coreui/icons-react": "^2.3.0",
     "@coreui/react": "^5.7.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@hookform/resolvers": "^5.1.1",
+    "@mui/icons-material": "^7.2.0",
+    "@mui/lab": "^7.0.0-beta.14",
+    "@mui/material": "^7.2.0",
+    "@mui/x-data-grid": "^8.7.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@wojtekmaj/react-timerange-picker": "^6.0.0",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",
+    "date-fns": "^4.1.0",
+    "formik": "^2.4.6",
+    "nodemon": "^3.1.10",
     "react": "^19.1.0",
+    "react-big-calendar": "^1.19.3",
+    "react-calendar": "^6.0.0",
+    "react-datepicker": "^8.4.0",
     "react-dom": "^19.1.0",
+    "react-hook-form": "^7.58.1",
+    "react-image-crop": "^11.0.10",
     "react-router-dom": "^7.6.1",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "sass": "^1.89.1",
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5",
+    "yup": "^1.6.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -44,3 +63,4 @@
     ]
   }
 }
+  

@@ -1,16 +1,9 @@
-const { query, getOne, insert, update, remove } = require('../utils/dbUtils');
+const { query, getOne, insert, update, remove, callProcedure, getOneProcedure } = require('../utils/dbUtils');
 
 // Get all customers
 const getCustomers = async (req, res) => {
   try {
-    const customers = await query(`
-      SELECT cd.*, 
-             cc.name as company_name,
-             cc.industry as company_industry
-      FROM customer_details cd
-      LEFT JOIN customer_companies cc ON cd.customer_company_id = cc.customer_company_id
-      ORDER BY cd.created_at DESC
-    `);
+    const customers = await callProcedure('sp_GetAllCustomerDetails', []);
     
     res.status(200).json({
       success: true,
@@ -26,14 +19,7 @@ const getCustomers = async (req, res) => {
 // Get single customer
 const getCustomer = async (req, res) => {
   try {
-    const customer = await getOne(`
-      SELECT cd.*, 
-             cc.name as company_name,
-             cc.industry as company_industry
-      FROM customer_details cd
-      LEFT JOIN customer_companies cc ON cd.customer_company_id = cc.customer_company_id
-      WHERE cd.customer_id = ?
-    `, [req.params.id]);
+    const customer = await getOneProcedure('sp_GetCustomerDetailsById', [req.params.id]);
 
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
@@ -63,10 +49,7 @@ const createCustomer = async (req, res) => {
 
     // Check if company exists
     if (customer_company_id) {
-      const company = await getOne(
-        'SELECT customer_company_id FROM customer_companies WHERE customer_company_id = ?',
-        [customer_company_id]
-      );
+      const company = await getOneProcedure('sp_GetCustomerCompanyById', [customer_company_id]);
 
       if (!company) {
         return res.status(404).json({ message: 'Customer company not found' });
@@ -74,32 +57,26 @@ const createCustomer = async (req, res) => {
     }
 
     // Check if email is unique
-    const existingCustomer = await getOne(
-      'SELECT customer_id FROM customer_details WHERE email = ?',
-      [email]
-    );
+    const emailCheck = await callProcedure('sp_CheckCustomerEmailExists', [email, 0]);
 
-    if (existingCustomer) {
+    if (emailCheck[0]?.email_count > 0) {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    const customerId = await insert('customer_details', {
+    // Create customer using stored procedure
+    const result = await callProcedure('sp_CreateCustomerDetails', [
       customer_company_id,
       first_name,
       last_name,
       email,
       phone,
       position
-    });
+    ]);
 
-    const customer = await getOne(`
-      SELECT cd.*, 
-             cc.name as company_name,
-             cc.industry as company_industry
-      FROM customer_details cd
-      LEFT JOIN customer_companies cc ON cd.customer_company_id = cc.customer_company_id
-      WHERE cd.customer_id = ?
-    `, [customerId]);
+    const customerId = result[0]?.customer_id;
+
+    // Get the created customer
+    const customer = await getOneProcedure('sp_GetCustomerDetailsById', [customerId]);
 
     res.status(201).json({
       success: true,
@@ -123,12 +100,16 @@ const updateCustomer = async (req, res) => {
       position
     } = req.body;
 
+    // Check if customer exists
+    const existingCustomer = await getOneProcedure('sp_GetCustomerDetailsById', [req.params.id]);
+    
+    if (!existingCustomer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
     // Check if company exists
     if (customer_company_id) {
-      const company = await getOne(
-        'SELECT customer_company_id FROM customer_companies WHERE customer_company_id = ?',
-        [customer_company_id]
-      );
+      const company = await getOneProcedure('sp_GetCustomerCompanyById', [customer_company_id]);
 
       if (!company) {
         return res.status(404).json({ message: 'Customer company not found' });
@@ -136,43 +117,27 @@ const updateCustomer = async (req, res) => {
     }
 
     // Check if email is unique (excluding current customer)
-    if (email) {
-      const existingCustomer = await getOne(
-        'SELECT customer_id FROM customer_details WHERE email = ? AND customer_id != ?',
-        [email, req.params.id]
-      );
+    if (email && email !== existingCustomer.email) {
+      const emailCheck = await callProcedure('sp_CheckCustomerEmailExists', [email, req.params.id]);
 
-      if (existingCustomer) {
+      if (emailCheck[0]?.email_count > 0) {
         return res.status(400).json({ message: 'Email already exists' });
       }
     }
 
-    const result = await update(
-      'customer_details',
-      {
+    // Update customer using stored procedure
+    await callProcedure('sp_UpdateCustomerDetails', [
+      req.params.id,
         customer_company_id,
         first_name,
         last_name,
         email,
         phone,
         position
-      },
-      'customer_id = ?',
-      [req.params.id]
-    );
+    ]);
 
-    if (result === 0) {
-      return res.status(404).json({ message: 'Customer not found' });
-    }
-
-    const customer = await getOne(`
-      SELECT cd.*, 
-             cc.name as company_name,
-             cc.industry as company_industry
-      FROM customer_details cd
-      LEFT JOIN customer_companies cc ON cd.customer_company_id = cc.customer_company_id
-      WHERE cd.customer_id = ?
-    `, [req.params.id]);
+    // Get the updated customer
+    const customer = await getOneProcedure('sp_GetCustomerDetailsById', [req.params.id]);
 
     res.status(200).json({
       success: true,
@@ -187,15 +152,15 @@ const updateCustomer = async (req, res) => {
 // Delete customer
 const deleteCustomer = async (req, res) => {
   try {
-    const result = await remove(
-      'customer_details',
-      'customer_id = ?',
-      [req.params.id]
-    );
+    // Check if customer exists
+    const customer = await getOneProcedure('sp_GetCustomerDetailsById', [req.params.id]);
 
-    if (result === 0) {
+    if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
     }
+
+    // Delete customer using stored procedure
+    await callProcedure('sp_DeleteCustomerDetails', [req.params.id]);
 
     res.status(200).json({
       success: true,

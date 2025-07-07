@@ -3,20 +3,20 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { validate, companySchema } = require('../middleware/validationMiddleware');
 const {
-  getCompanies,
-  getCompany,
-  createCompany,
-  updateCompany,
-  deleteCompany
+  getBranches,
+  getBranch,
+  createBranch,
+  updateBranch,
+  deleteBranch
 } = require('../controllers/companyController');
 
 router.route('/')
-  .get(protect, getCompanies)
-  .post(protect, authorize('admin'), validate(companySchema), createCompany);
+  .get(protect, getBranches)
+  .post(protect, authorize('admin'), validate(companySchema), createBranch);
 
 router.route('/:id')
-  .get(protect, getCompany)
-  .put(protect, authorize('admin'), validate(companySchema), updateCompany)
-  .delete(protect, authorize('admin'), deleteCompany);
+  .get(protect, getBranch)
+  .put(protect, authorize('admin'), validate(companySchema), updateBranch)
+  .delete(protect, authorize('admin'), deleteBranch);
 
 module.exports = router;

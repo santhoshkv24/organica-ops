@@ -7,13 +7,12 @@ const CustomerDetailForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
-    customer_company_id: '',
-    gender: '',
-    designation: '',
-    address: '',
-    mobile_no: '',
+    first_name: '',
+    last_name: '',
     email: '',
+    phone: '',
+    position: '',
+    customer_company_id: '',
   });
   const [customerCompanies, setCustomerCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,25 +26,34 @@ const CustomerDetailForm = () => {
       .then(response => {
         const fetchedCompanies = Array.isArray(response?.data) ? response.data : [];
         setCustomerCompanies(fetchedCompanies);
+        
         if (id) {
           // Editing: Fetch existing customer detail data
           return getCustomerDetailById(id);
         } else {
-          // Creating: Set default company if available
+          // Creating: Set default company if available (optional)
           if (fetchedCompanies.length > 0) {
-            // Optionally set a default, or leave blank
-            // setFormData(prev => ({ ...prev, customer_company_id: fetchedCompanies[0].id }));
+            // setFormData(prev => ({ ...prev, customer_company_id: fetchedCompanies[0].customer_company_id.toString() }));
           }
           return Promise.resolve(null);
         }
       })
       .then(response => {
-        if (response) { // Only set form data if editing
+        if (response && response.data) {
           const customerData = response.data;
+          
+          // Map the data to the form fields - extract name components if needed
+          const nameParts = customerData.name ? customerData.name.split(' ') : ['', ''];
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+          
           setFormData({
-            ...customerData,
-            // Ensure ID is string for select, handle null
-            customer_company_id: customerData.customer_company_id?.toString() || '',
+            first_name: customerData.first_name || firstName,
+            last_name: customerData.last_name || lastName,
+            email: customerData.email || '',
+            phone: customerData.phone || '', // Map from phone or mobile_no
+            position: customerData.position || '', // Map from position or designation
+            customer_company_id: customerData.customer_company_id ? customerData.customer_company_id.toString() : '',
           });
         }
       })
@@ -69,19 +77,15 @@ const CustomerDetailForm = () => {
     setLoading(true);
     setFormError('');
 
-    // Prepare data: convert IDs, handle optional fields
+    // Prepare data to match stored procedure parameters
     const dataToSubmit = {
-      ...formData,
-      // Send null if company is not selected or empty
-      customer_company_id: formData.customer_company_id ? parseInt(formData.customer_company_id) : null,
+      customer_company_id: formData.customer_company_id ? parseInt(formData.customer_company_id, 10) : null,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email,
+      phone: formData.phone,
+      position: formData.position
     };
-    // Handle other optional fields that might be empty strings
-    Object.keys(dataToSubmit).forEach(key => {
-        if (dataToSubmit[key] === '' && key !== 'name') { // Keep name required
-             dataToSubmit[key] = null;
-        }
-    });
-
 
     try {
       if (id) {
@@ -113,9 +117,13 @@ const CustomerDetailForm = () => {
             {formError && <p className="text-danger">{formError}</p>}
             <CForm onSubmit={handleSubmit}>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="name" className="col-sm-2 col-form-label">Name *</CFormLabel>
-                <CCol sm={10}>
-                  <CFormInput type="text" id="name" name="name" value={formData.name} onChange={handleChange} required />
+                <CFormLabel htmlFor="first_name" className="col-sm-2 col-form-label">First Name *</CFormLabel>
+                <CCol sm={4}>
+                  <CFormInput type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} required />
+                </CCol>
+                <CFormLabel htmlFor="last_name" className="col-sm-2 col-form-label">Last Name *</CFormLabel>
+                <CCol sm={4}>
+                  <CFormInput type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} required />
                 </CCol>
               </CRow>
               <CRow className="mb-3">
@@ -130,7 +138,7 @@ const CustomerDetailForm = () => {
                   >
                     <option value="">Select Company (Optional)</option>
                     {customerCompanies.map(company => (
-                      <option key={company.id} value={company.id}>
+                      <option key={company.customer_company_id} value={company.customer_company_id}>
                         {company.name}
                       </option>
                     ))}
@@ -138,34 +146,19 @@ const CustomerDetailForm = () => {
                 </CCol>
               </CRow>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="email" className="col-sm-2 col-form-label">Email</CFormLabel>
+                <CFormLabel htmlFor="email" className="col-sm-2 col-form-label">Email *</CFormLabel>
                 <CCol sm={4}>
-                  <CFormInput type="email" id="email" name="email" value={formData.email || ''} onChange={handleChange} />
+                  <CFormInput type="email" id="email" name="email" value={formData.email} onChange={handleChange} required />
                 </CCol>
-                 <CFormLabel htmlFor="mobile_no" className="col-sm-2 col-form-label">Mobile No</CFormLabel>
+                <CFormLabel htmlFor="phone" className="col-sm-2 col-form-label">Phone</CFormLabel>
                 <CCol sm={4}>
-                  <CFormInput type="text" id="mobile_no" name="mobile_no" value={formData.mobile_no || ''} onChange={handleChange} />
-                </CCol>
-              </CRow>
-              <CRow className="mb-3">
-                <CFormLabel htmlFor="designation" className="col-sm-2 col-form-label">Designation</CFormLabel>
-                <CCol sm={4}>
-                  <CFormInput type="text" id="designation" name="designation" value={formData.designation || ''} onChange={handleChange} />
-                </CCol>
-                <CFormLabel htmlFor="gender" className="col-sm-2 col-form-label">Gender</CFormLabel>
-                <CCol sm={4}>
-                   <CFormSelect id="gender" name="gender" value={formData.gender || ''} onChange={handleChange} aria-label="Select Gender">
-                     <option value="">Select Gender</option>
-                     <option value="Male">Male</option>
-                     <option value="Female">Female</option>
-                     <option value="Other">Other</option>
-                   </CFormSelect>
+                  <CFormInput type="text" id="phone" name="phone" value={formData.phone || ''} onChange={handleChange} />
                 </CCol>
               </CRow>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="address" className="col-sm-2 col-form-label">Address</CFormLabel>
+                <CFormLabel htmlFor="position" className="col-sm-2 col-form-label">Position</CFormLabel>
                 <CCol sm={10}>
-                  <CFormTextarea id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={3} />
+                  <CFormInput type="text" id="position" name="position" value={formData.position || ''} onChange={handleChange} />
                 </CCol>
               </CRow>
 

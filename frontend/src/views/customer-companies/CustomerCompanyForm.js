@@ -8,10 +8,10 @@ const CustomerCompanyForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
-    phone_no: '',
-    email: '',
     industry: '',
+    address: '',
+    contact_email: '',
+    contact_phone: '',
   });
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -22,7 +22,14 @@ const CustomerCompanyForm = () => {
       setPageLoading(true);
       getCustomerCompanyById(id)
         .then(response => {
-          setFormData(response.data);
+          const company = response.data;
+          setFormData({
+            name: company.name || '',
+            industry: company.industry || '',
+            address: company.address || '',
+            contact_email: company.contact_email || '',
+            contact_phone: company.contact_phone || ''
+          });
         })
         .catch(err => {
           console.error("Error fetching customer company:", err);
@@ -81,25 +88,25 @@ const CustomerCompanyForm = () => {
                 </CCol>
               </CRow>
               <CRow className="mb-3">
+                <CFormLabel htmlFor="industry" className="col-sm-2 col-form-label">Industry</CFormLabel>
+                <CCol sm={10}>
+                  <CFormInput type="text" id="industry" name="industry" value={formData.industry || ''} onChange={handleChange} />
+                </CCol>
+              </CRow>
+              <CRow className="mb-3">
                 <CFormLabel htmlFor="address" className="col-sm-2 col-form-label">Address</CFormLabel>
                 <CCol sm={10}>
                   <CFormTextarea id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={3} />
                 </CCol>
               </CRow>
               <CRow className="mb-3">
-                <CFormLabel htmlFor="phone_no" className="col-sm-2 col-form-label">Phone</CFormLabel>
+                <CFormLabel htmlFor="contact_phone" className="col-sm-2 col-form-label">Phone</CFormLabel>
                 <CCol sm={4}>
-                  <CFormInput type="text" id="phone_no" name="phone_no" value={formData.phone_no || ''} onChange={handleChange} />
+                  <CFormInput type="text" id="contact_phone" name="contact_phone" value={formData.contact_phone || ''} onChange={handleChange} />
                 </CCol>
-                <CFormLabel htmlFor="email" className="col-sm-2 col-form-label">Email</CFormLabel>
+                <CFormLabel htmlFor="contact_email" className="col-sm-2 col-form-label">Email</CFormLabel>
                 <CCol sm={4}>
-                  <CFormInput type="email" id="email" name="email" value={formData.email || ''} onChange={handleChange} />
-                </CCol>
-              </CRow>
-              <CRow className="mb-3">
-                <CFormLabel htmlFor="industry" className="col-sm-2 col-form-label">Industry</CFormLabel>
-                <CCol sm={10}>
-                  <CFormInput type="text" id="industry" name="industry" value={formData.industry || ''} onChange={handleChange} />
+                  <CFormInput type="email" id="contact_email" name="contact_email" value={formData.contact_email || ''} onChange={handleChange} />
                 </CCol>
               </CRow>
               <CRow>

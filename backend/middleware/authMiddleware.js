@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getOne } = require('../utils/dbUtils');
+const { getOne, getOneProcedure } = require('../utils/dbUtils');
 
 // Protect routes - verify JWT token
 const protect = async (req, res, next) => {
@@ -7,8 +7,8 @@ const protect = async (req, res, next) => {
     let token;
     
     // Check for token in cookies or Authorization header
-    if (req.cookies.jwt) {
-      token = req.cookies.jwt;
+    if (req.cookies.token) {
+      token = req.cookies.token;
     } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
@@ -24,11 +24,8 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized, invalid token' });
     }
 
-    // Get user from token
-    const user = await getOne(
-      'SELECT user_id, username, email, role FROM users WHERE user_id = ?',
-      [decoded.id]
-    );
+    // Get user from token - use stored procedure for consistency
+    const user = await getOneProcedure('sp_GetUserById', [decoded.id]);
     
     if (!user) {
       return res.status(401).json({ message: 'Not authorized, user not found' });
@@ -39,15 +36,21 @@ const protect = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    return res.status(401).json({ message: 'Not authorized, token failed' });
+    return res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
   }
 };
 
-// Check if user has required role
+// Middleware for role-based authorization
 const authorize = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized, no token' });
+    }
+
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Not authorized, insufficient permissions' });
+      return res.status(403).json({ 
+        message: `Access denied. Required role: ${roles.join(' or ')}`
+      });
     }
     next();
   };

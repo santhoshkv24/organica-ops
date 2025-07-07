@@ -1,39 +1,133 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { CButton, CCard, CCardBody, CCardGroup, CCol, CContainer, CForm, CFormInput, CInputGroup, CInputGroupText, CRow, CAlert } from '@coreui/react';
+import React, { useState, useRef, useCallback } from 'react';
+import {
+  CButton,
+  CCard,
+  CCardBody,
+  CCardGroup,
+  CCol,
+  CContainer,
+  CForm,
+  CFormInput,
+  CInputGroup,
+  CInputGroupText,
+  CRow,
+  CAlert,
+  CSpinner
+} from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilLockLocked, cilUser } from '@coreui/icons';
+import { cilLockLocked, cilEnvelopeClosed } from '@coreui/icons';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import Logo from '../../assets/images/logo-c2c2.png';
+import Turnstile from '../../components/Turnstile';
+
+// Hardcoded site key - same as in .env file
+const TURNSTILE_SITE_KEY = '0x4AAAAAABi8AaTK_UF25ZzJ';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: '',
+    'cf-turnstile-response': ''
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [turnstileError, setTurnstileError] = useState('');
+  const turnstileRef = useRef(null);
+  
+  // Use hardcoded key instead of environment variable
+  // const turnstileSiteKey = process.env.REACT_APP_CLOUDFLARE_TURNSTILE_SITE_KEY;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setCredentials({ ...credentials, [name]: value });
+    // Clear error when user starts typing
+    if (error) setError('');
+  };
+
+  const validateForm = () => {
+    if (!credentials.email) {
+      setError('Email is required');
+      return false;
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(credentials.email)) {
+      setError('Invalid email format');
+      return false;
+    } else if (!credentials.password) {
+      setError('Password is required');
+      return false;
+    }
+    return true;
+  };
+
+  const handleTurnstileVerify = useCallback((token) => {
+    console.log('Turnstile verified with token:', token);
+    setCredentials(prev => ({
+      ...prev,
+      'cf-turnstile-response': token
+    }));
+    setTurnstileError('');
+  }, []);
+
+  const handleTurnstileError = useCallback((error) => {
+    console.error('Turnstile error:', error);
+    setTurnstileError(error || 'Please complete the security check');
+    // Clear any existing token on error
+    setCredentials(prev => ({
+      ...prev,
+      'cf-turnstile-response': ''
+    }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    setError('');
+    setTurnstileError('');
+
+    if (!validateForm()) {
       return;
     }
 
-    setError('');
-    setLoading(true);
+    // Check if Turnstile token exists
+    if (!credentials['cf-turnstile-response']) {
+      setTurnstileError('Please complete the security check');
+      return;
+    }
 
     try {
-      const result = await login({ email, password });
+      setLoading(true);
+      const result = await login(credentials);
+      console.log('Login result:', result);
+      
       if (result.success) {
-        navigate('/dashboard');
+        console.log('Login successful');
+        
+        // Check if this is a first-time login
+        if (result.isFirstLogin) {
+          console.log('First-time login detected, redirecting to password change');
+          navigate('/set-password');
+        } else {
+          console.log('Regular login, navigating to dashboard');
+          navigate('/dashboard');
+        }
+        
+        console.log('Navigation called');
       } else {
-        setError(result.message || 'Login failed. Please try again.');
+        setError(result.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'An error occurred during login.');
+      setError(err.response?.data?.message || 'Failed to log in. Please check your credentials.');
+      setLoading(false);
+      // Reset Turnstile on error
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+      setCredentials(prev => ({
+        ...prev,
+        'cf-turnstile-response': ''
+      }));
     } finally {
       setLoading(false);
     }
@@ -43,35 +137,33 @@ const Login = () => {
     <div className="bg-light min-vh-100 d-flex flex-row align-items-center">
       <CContainer>
         <CRow className="justify-content-center">
-          <CCol md={8}>
+          <CCol md={8} lg={6} xl={5}>
             <CCardGroup>
-              <CCard className="p-4">
+              <CCard className="p-4 shadow-lg">
                 <CCardBody>
+                  <div className="text-center mb-4">
+                    <img src={Logo} style={{ height: '110px', marginBottom: '1rem' }} />
+                    <p className="text-medium-emphasis">Sign in to your account</p>
+                  </div>
+                  
+                  {error && <CAlert color="danger">{error}</CAlert>}
+                  
                   <CForm onSubmit={handleSubmit}>
-                    <h1>Login</h1>
-                    <p className="text-medium-emphasis">Sign In to your account</p>
-                    
-                    {error && (
-                      <CAlert color="danger" className="mb-3">
-                        {error}
-                      </CAlert>
-                    )}
-
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
-                        <CIcon icon={cilUser} />
+                        <CIcon icon={cilEnvelopeClosed} />
                       </CInputGroupText>
                       <CFormInput
                         type="email"
                         placeholder="Email"
                         autoComplete="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        name="email"
+                        value={credentials.email}
+                        onChange={handleChange}
                         required
-                        disabled={loading}
+                        invalid={!!error && !credentials.email}
                       />
                     </CInputGroup>
-                    
                     <CInputGroup className="mb-4">
                       <CInputGroupText>
                         <CIcon icon={cilLockLocked} />
@@ -80,48 +172,62 @@ const Login = () => {
                         type="password"
                         placeholder="Password"
                         autoComplete="current-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        name="password"
+                        value={credentials.password}
+                        onChange={handleChange}
                         required
-                        disabled={loading}
+                        invalid={!!error && !credentials.password}
                       />
                     </CInputGroup>
-
-                    <CRow>
+                    {/* Cloudflare Turnstile Widget */}
+                    <div className="mb-3" style={{ minHeight: '85px' }}>
+                      <Turnstile
+                        ref={turnstileRef}
+                        onVerify={handleTurnstileVerify}
+                        onError={handleTurnstileError}
+                        siteKey={TURNSTILE_SITE_KEY}
+                      />
+                      {turnstileError && (
+                        <div className="text-danger small mt-2">
+                          <i className="cil-warning me-1"></i> {turnstileError}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <CRow className="mt-3">
                       <CCol xs={6}>
                         <CButton 
                           type="submit" 
                           color="primary" 
-                          className="px-4" 
+                          className="px-4 w-100" 
                           disabled={loading}
                         >
-                          {loading ? 'Logging in...' : 'Login'}
+                          {loading ? <CSpinner size="sm" className="me-2" /> : null}
+                          {loading ? 'Signing in...' : 'Sign In'}
                         </CButton>
                       </CCol>
                       <CCol xs={6} className="text-right">
-                        <Link to="/forgot-password">
-                          <CButton color="link" className="px-0">
-                            Forgot password?
+                        <Link to="/forgot-password" className="w-100 d-inline-block">
+                          <CButton 
+                            color="link" 
+                            className="px-0 w-100 text-decoration-none"
+                            disabled={loading}
+                          >
+                            Forgot Password?
+                          </CButton>
+                        </Link>
+                      </CCol>
+                    </CRow>
+                    <CRow className="mt-3">
+                      <CCol xs={12} className="text-center">
+                        <Link to="/register">
+                          <CButton color="light" variant="outline" className="px-0">
+                            Create an Account
                           </CButton>
                         </Link>
                       </CCol>
                     </CRow>
                   </CForm>
-                </CCardBody>
-              </CCard>
-              <CCard className="text-white bg-primary py-5" style={{ width: '44%' }}>
-                <CCardBody className="text-center">
-                  <div>
-                    <h2>Sign up</h2>
-                    <p>
-                      If you don't have an account, register now to access the C2C Portal.
-                    </p>
-                    <Link to="/register">
-                      <CButton color="primary" className="mt-3" active tabIndex={-1}>
-                        Register Now!
-                      </CButton>
-                    </Link>
-                  </div>
                 </CCardBody>
               </CCard>
             </CCardGroup>

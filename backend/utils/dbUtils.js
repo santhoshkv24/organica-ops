@@ -19,6 +19,40 @@ const query = async (sql, params = []) => {
   }
 };
 
+// Call a stored procedure with parameters
+const callProcedure = async (procedureName, params = [], connection = null) => {
+  const shouldRelease = !connection;
+  
+  try {
+    // Get a new connection if one wasn't provided
+    if (!connection) {
+      connection = await pool.getConnection();
+    }
+    
+    // Format the procedure call with the correct number of parameters
+    const placeholders = params.map(() => '?').join(', ');
+    const sql = `CALL ${procedureName}(${placeholders})`;
+    
+    const [results] = await connection.execute(sql, params);
+    // Stored procedures return an array with the result set(s)
+    // Usually we want the first result set
+    return results[0] || [];
+  } catch (error) {
+    console.error('Stored procedure call error:', {
+      procedureName,
+      params,
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  } finally {
+    // Only release the connection if we created it in this function
+    if (shouldRelease && connection) {
+      connection.release();
+    }
+  }
+};
+
 // Get a single record
 const getOne = async (sql, params = []) => {
   try {
@@ -27,6 +61,22 @@ const getOne = async (sql, params = []) => {
   } catch (error) {
     console.error('GetOne error:', {
       sql,
+      params,
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+};
+
+// Get a single record from a stored procedure
+const getOneProcedure = async (procedureName, params = [], connection = null) => {
+  try {
+    const results = await callProcedure(procedureName, params, connection);
+    return results[0] || null;
+  } catch (error) {
+    console.error('GetOneProcedure error:', {
+      procedureName,
       params,
       error: error.message,
       stack: error.stack
@@ -147,7 +197,9 @@ const rollback = async (connection) => {
 
 module.exports = {
   query,
+  callProcedure,
   getOne,
+  getOneProcedure,
   insert,
   update,
   remove,

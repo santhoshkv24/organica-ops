@@ -6,6 +6,10 @@
   height: 40vmin;
   pointer-events: none;
 }
+.btn-primary {
+  background-color: #6a1fdb !important;
+  border-color: #6a1fdb !important;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
@@ -34,5 +38,134 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* App Loading Spinner */
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f8f9fa;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #321fdb;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Global Styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Utility Classes */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Layout fixes */
+.c2c-app-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Make sidebar nav items clickable */
+.sidebar-nav .nav-item {
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  border-radius: 0.25rem;
+  margin: 0 0.5rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-nav .nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav .nav-item.active {
+  background-color: #321fdb;
+  color: white;
+  font-weight: 500;
+}
+
+.sidebar-nav .nav-item.active .nav-icon {
+  color: white;
+}
+
+.sidebar-nav .nav-item > div {
+  width: 100%;
+  padding: 8px;
+}
+
+/* Fix for content overlapping with sidebar on mobile */
+@media (max-width: 767px) {
+  .c2c-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .c2c-sidebar.visible {
+    transform: translateX(0);
+  }
+  
+  .wrapper {
+    margin-left: 0 !important;
   }
 }
