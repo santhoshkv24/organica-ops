@@ -4,7 +4,7 @@ const { callProcedure, getOneProcedure } = require('../utils/dbUtils');
 const addProjectTeamMember = async (req, res) => {
   try {
     const { project_id, employee_id, role } = req.body;
-    const added_by = req.user.employee_id; // Get the ID of the authenticated user
+    const added_by = req.user.user_id; // Get the ID of the authenticated user
 
     console.log(project_id, employee_id, role, added_by);
     const result = await callProcedure('sp_CreateProjectTeamMember', [

@@ -9,6 +9,7 @@
     "@coreui/react": "^5.7.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@fontsource/montserrat": "^5.2.6",
     "@hookform/resolvers": "^5.1.1",
     "@mui/icons-material": "^7.2.0",
     "@mui/lab": "^7.0.0-beta.14",
@@ -31,6 +32,8 @@
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.58.1",
     "react-image-crop": "^11.0.10",
+    "react-mui-sidebar": "^1.6.3",
+    "react-pro-sidebar": "^1.1.0",
     "react-router-dom": "^7.6.1",
     "react-scripts": "5.0.1",
     "sass": "^1.89.1",
@@ -63,4 +66,3 @@
     ]
   }
 }
-  

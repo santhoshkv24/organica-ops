@@ -887,31 +887,31 @@ BEGIN
     END IF;
     
     -- Get results - simplified without pagination
-    SELECT 
-        cte.customer_track_entry_id,
-        cte.project_id,
-        p.name AS project_name,
-        cte.assigned_to,
-        CONCAT(ce.first_name, ' ', ce.last_name) AS assigned_to_name,
-        ce.email AS assigned_to_email,
-        ce.customer_company_id,
-        cc.name AS customer_company_name,
-        cte.assigned_by,
-        u.username AS assigned_by_name,
-        cte.title,
-        cte.description,
-        cte.task_type,
-        cte.priority,
-        cte.status,
-        cte.due_date,
-        cte.status_updated_at,
-        cte.created_at,
-        cte.updated_at
-    FROM customer_track_entries cte
-    JOIN projects p ON cte.project_id = p.project_id
-    JOIN customer_employees ce ON cte.assigned_to = ce.customer_employee_id
-    JOIN customer_companies cc ON ce.customer_company_id = cc.customer_company_id
-    JOIN users u ON cte.assigned_by = u.user_id
+        SELECT 
+            cte.customer_track_entry_id,
+            cte.project_id,
+            p.name AS project_name,
+            cte.assigned_to,
+            CONCAT(ce.first_name, ' ', ce.last_name) AS assigned_to_name,
+            ce.email AS assigned_to_email,
+            ce.customer_company_id,
+            cc.name AS customer_company_name,
+            cte.assigned_by,
+            u.username AS assigned_by_name,
+            cte.title,
+            cte.description,
+            cte.task_type,
+            cte.priority,
+            cte.status,
+            cte.due_date,
+            cte.status_updated_at,
+            cte.created_at,
+            cte.updated_at
+        FROM customer_track_entries cte
+        JOIN projects p ON cte.project_id = p.project_id
+        JOIN customer_employees ce ON cte.assigned_to = ce.customer_employee_id
+        JOIN customer_companies cc ON ce.customer_company_id = cc.customer_company_id
+        JOIN users u ON cte.assigned_by = u.user_id
     WHERE cte.assigned_by = p_assigned_by
       -- For customers, only show entries for their company
       AND (v_requester_role NOT IN ('customer_head', 'customer_employee') OR ce.customer_company_id = v_customer_company_id)

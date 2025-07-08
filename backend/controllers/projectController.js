@@ -1,4 +1,4 @@
-const { query, callProcedure, beginTransaction, commit, rollback } = require('../utils/dbUtils');
+const { callProcedure } = require('../utils/dbUtils');
 
 // Get all projects
 const getProjects = async (req, res) => {
@@ -405,6 +405,27 @@ const getProjectsByTeamMember = async (req, res) => {
   }
 };
 
+// Get projects by user ID
+const getProjectsByUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const projects = await callProcedure('sp_GetProjectsByUser', [userId]);
+    
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      data: projects
+    });
+  } catch (error) {
+    console.error('Error getting projects by user:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to get projects by user',
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   getProjects,
   getProject,
@@ -413,5 +434,6 @@ module.exports = {
   deleteProject,
   getProjectsByTeam,
   getProjectsByManager,
-  getProjectsByTeamMember
+  getProjectsByTeamMember,
+  getProjectsByUser
 };

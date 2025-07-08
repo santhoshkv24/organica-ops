@@ -123,11 +123,12 @@ const AppSidebar = ({ sidebarShow, setSidebarShow }) => {
         <NavItem icon={cilGroup} path="/teams">Teams</NavItem>
         <NavItem icon={cilUser} path="/employees">Employees</NavItem>
         
-        <CNavTitle>Project Management</CNavTitle>
+        <CNavTitle clas>Project Management</CNavTitle>
         <NavItem icon={cilBriefcase} path="/projects">Projects</NavItem>
         <NavItem icon={cilGroup} path="/projects/teams">Project Teams</NavItem>
         <NavItem icon={cilBriefcase} path="/track-entries/dashboard">Track Sheet</NavItem>
         <NavItem icon={cilCalendar} path="/meetings">Meetings</NavItem>
+        <NavItem icon={cilTask} path="/patch-movement">Patch Movement</NavItem>
         
         <CNavTitle>Customer Relationship</CNavTitle>
         <NavItem icon={cilBasket} path="/customer-companies">Customer Companies</NavItem>

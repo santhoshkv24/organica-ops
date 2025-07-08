@@ -91,7 +91,7 @@ api.interceptors.response.use(
 
 // Helper function to handle API responses
 const handleResponse = async (apiCall) => {
-  try {
+  try { 
     const response = await apiCall();
     
     // Log response only in development environment to avoid excessive logging
@@ -325,6 +325,14 @@ export const updateProject = (id, data) => handleResponse(() => api.put(`/projec
 export const deleteProject = (id) => handleResponse(() => api.delete(`/projects/${id}`));
 export const getProjectsByTeam = (teamId) => handleResponse(() => api.get(`/projects/team/${teamId}`));
 export const getProjectsByManager = (managerId) => handleResponse(() => api.get(`/projects/manager/${managerId}`));
+export const getProjectsByUser = (userId) => handleResponse(() => api.get(`/projects/user/${userId}`));
+
+// Patch Movement API calls
+export const createPatchMovementRequest = (data) => handleResponse(() => api.post('/patch-movements', data));
+export const getPatchMovementRequestsByProject = (projectId) => handleResponse(() => api.get(`/patch-movements/project/${projectId}`));
+export const getPatchMovementRequestById = (patchId) => handleResponse(() => api.get(`/patch-movements/${patchId}`));
+export const updatePatchMovementRequestStatus = (patchId, status) => handleResponse(() => api.patch(`/patch-movements/${patchId}/status`, { status }));
+export const getPatchMovementRequestByTeamLeadId = (teamLeadId) => handleResponse(() => api.get(`/patch-movements/team-lead/${teamLeadId}`));
 
 // Project-Team Relationship API calls
 export const getProjectTeams = (projectId) => handleResponse(() => api.get(`/projects/${projectId}/teams`));
@@ -473,6 +481,9 @@ export const getTrackEntryStatistics = () => handleResponse(() => api.get('/trac
 export const getTrackEntriesByProject = (projectId, params = {}) => handleResponse(() => api.get(`/track-entries/project/${projectId}`, { params }));
 export const getTrackEntriesByTeam = (teamId, params = {}) => handleResponse(() => api.get(`/track-entries/team/${teamId}`, { params }));
 export const getTrackEntriesByEmployee = (employeeId, params = {}) => handleResponse(() => api.get(`/track-entries/employee/${employeeId}`, { params }));
+export const transferTask = (id, assigned_to) => {
+  return handleResponse(() => api.post(`/track-entries/${id}/transfer`, { assigned_to }));
+};
 export const getProjectManagerTasks = (managerId) => {
   if (!managerId) {
     console.warn('getProjectManagerTasks called with undefined managerId');

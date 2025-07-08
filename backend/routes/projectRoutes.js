@@ -8,7 +8,8 @@ const {
   updateProject,
   deleteProject,
   getProjectsByTeam,
-  getProjectsByManager
+  getProjectsByManager,
+  getProjectsByUser
 } = require('../controllers/projectController');
 
 // Basic CRUD routes
@@ -26,5 +27,6 @@ router
 // Additional routes
 router.get('/team/:teamId', protect, getProjectsByTeam);
 router.get('/manager/:managerId', protect, getProjectsByManager);
+router.get('/user/:userId', protect, getProjectsByUser);
 
 module.exports = router;

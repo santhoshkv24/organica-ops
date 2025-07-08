@@ -258,3 +258,46 @@ BEGIN
     END IF;
 END //
 DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_GetProjectsByUser(IN p_user_id INT)
+BEGIN
+    DECLARE v_employee_id INT;
+
+    -- Get the employee_id associated with the user
+    SELECT employee_id INTO v_employee_id
+    FROM users
+    WHERE user_id = p_user_id
+    LIMIT 1;
+
+    -- If employee_id is found, get their projects
+    IF v_employee_id IS NOT NULL THEN
+        SELECT 
+            p.*,
+            cc.name AS customer_company_name,
+            CONCAT(e.first_name, ' ', e.last_name) AS manager_name,
+            ptm.role AS member_role
+        FROM projects p
+        JOIN project_team_members ptm ON p.project_id = ptm.project_id
+        LEFT JOIN customer_companies cc ON p.customer_company_id = cc.customer_company_id
+        LEFT JOIN employees e ON p.project_manager_id = e.employee_id
+        WHERE ptm.employee_id = v_employee_id
+        ORDER BY p.created_at DESC;
+    
+    -- If no employee_id found, return empty result set
+    ELSE
+        SELECT 
+            p.*,
+            cc.name AS customer_company_name,
+            CONCAT(e.first_name, ' ', e.last_name) AS manager_name,
+            ptm.role AS member_role
+        FROM projects p
+        JOIN project_team_members ptm ON p.project_id = ptm.project_id
+        LEFT JOIN customer_companies cc ON p.customer_company_id = cc.customer_company_id
+        LEFT JOIN employees e ON p.project_manager_id = e.employee_id
+        WHERE FALSE;
+    END IF;
+END //
+
+DELIMITER ;

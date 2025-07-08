@@ -269,3 +269,35 @@ CREATE TABLE `track_entry_history` (
   CONSTRAINT `track_entry_history_ibfk_1` FOREIGN KEY (`track_entry_id`) REFERENCES `track_entries` (`track_entry_id`) ON DELETE CASCADE,
   CONSTRAINT `track_entry_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `employees` (`employee_id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `patch_movement_requests` (
+  `patch_id` int NOT NULL AUTO_INCREMENT,
+  `project_id` int NOT NULL,
+  `patch_name` varchar(255) NOT NULL,
+  `patch_description` text NOT NULL,
+  `patch_type` enum('Hotfix','Security Update','Feature Patch','Bug Fix','Emergency','Maintenance') NOT NULL,
+  `severity` enum('Low','Medium','High','Critical') NOT NULL,
+  `environment_affected` enum('Dev','QA','UAT','Production','All') NOT NULL,
+  `estimated_deployment_time` int NOT NULL COMMENT 'Estimated time in minutes',
+  `scheduled_deployment_time` datetime DEFAULT NULL,
+  `attached_document` varchar(500) DEFAULT NULL COMMENT 'File path or document reference',
+  `requested_by` int NOT NULL,
+  `status` enum('Pending','Approved','Rejected','On Hold','Deployed','Cancelled') DEFAULT 'Pending',
+  `approved_by` int DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `team_lead_id` int NOT NULL,
+  PRIMARY KEY (`patch_id`),
+  KEY `project_id` (`project_id`),
+  KEY `requested_by` (`requested_by`),
+  KEY `approved_by` (`approved_by`),
+  KEY `idx_status` (`status`),
+  KEY `idx_patch_type` (`patch_type`),
+  KEY `idx_severity` (`severity`),
+  KEY `fk_patch_movement_requests_team_lead` (`team_lead_id`),
+  CONSTRAINT `fk_patch_movement_requests_team_lead` FOREIGN KEY (`team_lead_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_patch_requests_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_patch_requests_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_patch_requests_requested_by` FOREIGN KEY (`requested_by`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci

@@ -86,8 +86,9 @@ BEGIN
     
     SELECT LAST_INSERT_ID() AS track_entry_id;
 END;
-DELIMITER //
 
+
+DELIMITER //
 CREATE PROCEDURE sp_GetAssignableEmployees(
     IN p_project_id INT,
     IN p_team_id INT,
@@ -131,6 +132,7 @@ BEGIN
         AND EXISTS (
             SELECT 1 FROM project_team_members pt 
             WHERE pt.project_id = p_project_id
+            AND pt.employee_id = e.employee_id
         );
 
     -- Team leads can only see their team members
@@ -152,6 +154,7 @@ BEGIN
         AND EXISTS (
             SELECT 1 FROM project_team_members pt 
             WHERE pt.project_id = p_project_id
+            AND pt.employee_id = e.employee_id
         );
 
     -- Customer team heads can see team members of customer teams
@@ -166,9 +169,9 @@ BEGIN
             0 AS is_team_lead
         FROM customer_employees ce
         JOIN customer_companies cc ON ce.customer_company_id = cc.customer_company_id
-        JOIN customer_teams ct ON ce.customer_employee_id = ct.customer_employee_id
-        WHERE ct.project_id = p_project_id
-        AND ce.is_head = 0; -- Only non-head members
+        JOIN project_team_members pt ON ce.customer_employee_id = pt.customer_employee_id
+        WHERE pt.project_id = p_project_id
+        AND ce.is_head = 0;
 
     -- Regular employees and other roles get empty set
     ELSE
@@ -184,8 +187,8 @@ BEGIN
         WHERE FALSE;
     END IF;
 END //
-
 DELIMITER ;
+
 -- 4. Update Track Entry with Permission Check
 DELIMITER //
 CREATE PROCEDURE sp_UpdateTrackEntry(
@@ -273,6 +276,26 @@ BEGIN
             p_track_entry_id, 'status', v_old_status, p_status, v_employee_id
         );
     END IF;
+END;
+
+
+DELIMITER //
+CREATE PROCEDURE sp_TaskTransfer(IN p_track_entry_id INT, IN p_assigned_to INT) 
+BEGIN 
+    DECLARE v_assigned_to INT;
+    DECLARE v_assigned_by INT;
+
+    SELECT assigned_to, assigned_by INTO v_assigned_to, v_assigned_by
+    FROM track_entries 
+    WHERE track_entry_id = p_track_entry_id    ;
+
+    UPDATE track_entries set assigned_to = p_assigned_to where track_entry_id = p_track_entry_id;
+
+    INSERT INTO track_entry_history (
+        track_entry_id, field_changed, old_value, new_value, changed_by, changed_at
+    ) VALUES (
+        p_track_entry_id, 'assigned_to', v_assigned_to, p_assigned_to, v_assigned_by, CURRENT_TIMESTAMP
+    );
 END;
 
 -- 5. Get Track Entry with Permissions

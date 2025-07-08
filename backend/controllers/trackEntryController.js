@@ -118,6 +118,7 @@ const updateTrackEntry = async (req, res) => {
             req.user.user_id,
             updates.title || null,
             updates.description || null,
+            updates.assigned_to || null,
             updates.task_type || null,
             updates.priority || null,
             updates.status || null,
@@ -610,6 +611,39 @@ const getTeamLeadTasks = async (req, res) => {
     }
 };
 
+const transferTask = async (req, res) => {
+    const { id } = req.params;
+    const { assigned_to } = req.body;
+    
+    if (!assigned_to) {
+        return res.status(400).json({
+            success: false,
+            message: 'New assignee ID is required'
+        });
+    }
+
+    try {
+        // Call the stored procedure to transfer the task
+        const result = await callProcedure('sp_TaskTransfer', [
+            id,
+            assigned_to
+        ]);
+
+        res.status(200).json({
+            success: true,
+            message: 'Task transferred successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error transferring task:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to transfer task',
+            error: error.message
+        });
+    }
+}
+
 module.exports = {
     createTrackEntry,
     getTrackEntry,
@@ -624,5 +658,6 @@ module.exports = {
     getTrackEntriesByEmployee,
     getTrackEntriesByAssignedBy,
     getProjectManagerTasks,
-    getTeamLeadTasks
+    getTeamLeadTasks,
+    transferTask
 };

@@ -29,6 +29,7 @@ router.get('/team-lead/:teamLeadId', trackEntryController.getTeamLeadTasks);
 // Task actions - These use the :id parameter
 router.put('/:id/status', trackEntryController.updateTrackEntryStatus);
 router.post('/:id/log-hours', trackEntryController.logHoursWorked);
+router.post('/:id/transfer', authorize('admin', 'manager', 'team_lead'), trackEntryController.transferTask);
 
 // Individual track entry routes - This should come AFTER all other specific routes
 router

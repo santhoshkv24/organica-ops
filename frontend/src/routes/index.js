@@ -35,8 +35,9 @@ const Meetings = React.lazy(() => import('../views/meetings/Meetings'));
 const Projects = React.lazy(() => import('../views/projects/Projects'));
 const ProjectForm = React.lazy(() => import('../views/projects/ProjectForm'));
 const ProjectTeams = React.lazy(() => import('../views/project-teams/ProjectTeams'));
+const PatchMovement = React.lazy(() => import('../views/patch-movement/PatchMovement'));
 const TrackEntryForm = React.lazy(() => import('../views/track-entries/TrackEntryForm'));
-const TrackEntryDashboard = React.lazy(() => import('../views/track-entries/TrackEntryDs'));
+const TrackEntryDashboard = React.lazy(() => import('../views/track-entries/TrackEntryDashboard'));
 const ProjectsMuiView = React.lazy(() => import('../views/mui-test/test'))
 
 const AppRoutes = () => {
@@ -82,6 +83,7 @@ const AppRoutes = () => {
           <Route path="projects/teams" element={<EmployeeRoute><ProjectTeams /></EmployeeRoute>} />
           <Route path="projects/teams/:projectId" element={<ProjectManagerRoute><ProjectTeams /></ProjectManagerRoute>} />
           <Route path="meetings" element={<EmployeeRoute><Meetings /></EmployeeRoute>} />
+          <Route path="patch-movement" element={<EmployeeRoute><PatchMovement /></EmployeeRoute>} />
           
           {/* Track Entries */}
           <Route path="track-entries">
