@@ -26,6 +26,7 @@ const customerTeamRoutes = require('./routes/customerTeamRoutes');
 const trackEntryRoutes = require('./routes/trackEntryRoutes');
 const customerTrackEntryRoutes = require('./routes/customerTrackEntryRoutes');
 const patchMovementRoutes = require('./routes/patchMovementRoutes');
+const inventoryLoanRoutes = require('./routes/inventoryLoanRoutes');
 
 // Connect to database
 connectDB();
@@ -117,6 +118,7 @@ app.use('/api/customer-teams', customerTeamRoutes);
 app.use('/api/track-entries', trackEntryRoutes);
 app.use('/api/customer-track-entries', customerTrackEntryRoutes);
 app.use('/api/patch-movements', patchMovementRoutes);
+app.use('/api/inventory-loans', inventoryLoanRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

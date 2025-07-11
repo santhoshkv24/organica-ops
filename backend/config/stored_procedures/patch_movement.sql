@@ -67,36 +67,100 @@ BEGIN
 END //
 DELIMITER ;
 
--- Get all patch movement requests for a project
+-- Get all patch movement requests for a project with additional details
 DELIMITER //
 CREATE PROCEDURE sp_GetPatchMovementRequestsByProject(IN p_project_id INT)
 BEGIN
-    SELECT *
-    FROM patch_movement_requests
-    WHERE project_id = p_project_id;
+    SELECT 
+        pmr.*,
+        p.name AS project_name,
+        CONCAT(u_req.username) AS requester_name,
+        CONCAT(e_req.first_name, ' ', e_req.last_name) AS requester_full_name,
+        CONCAT(u_app.username) AS approved_by_name,
+        CONCAT(e_app.first_name, ' ', e_app.last_name) AS approved_by_full_name,
+        CONCAT(u_lead.username) AS team_lead_name,
+        CONCAT(e_lead.first_name, ' ', e_lead.last_name) AS team_lead_full_name
+    FROM patch_movement_requests pmr
+    JOIN projects p ON pmr.project_id = p.project_id
+    JOIN users u_req ON pmr.requested_by = u_req.user_id
+    LEFT JOIN employees e_req ON u_req.employee_id = e_req.employee_id
+    LEFT JOIN users u_app ON pmr.approved_by = u_app.user_id
+    LEFT JOIN employees e_app ON u_app.employee_id = e_app.employee_id
+    LEFT JOIN users u_lead ON pmr.team_lead_id = u_lead.user_id
+    LEFT JOIN employees e_lead ON u_lead.employee_id = e_lead.employee_id
+    WHERE pmr.project_id = p_project_id
+    ORDER BY pmr.created_at DESC;
 END //
 DELIMITER ;
 
--- Get a patch movement request by ID
+-- Get a patch movement request by ID with additional details
 DELIMITER //
 CREATE PROCEDURE sp_GetPatchMovementRequestById(IN p_patch_id INT)
 BEGIN
-    SELECT *
-    FROM patch_movement_requests
-    WHERE patch_id = p_patch_id;
+    SELECT 
+        pmr.*,
+        p.name AS project_name,
+        CONCAT(u_req.username) AS requester_name,
+        CONCAT(e_req.first_name, ' ', e_req.last_name) AS requester_full_name,
+        CONCAT(u_app.username) AS approved_by_name,
+        CONCAT(e_app.first_name, ' ', e_app.last_name) AS approved_by_full_name,
+        CONCAT(u_lead.username) AS team_lead_name,
+        CONCAT(e_lead.first_name, ' ', e_lead.last_name) AS team_lead_full_name
+    FROM patch_movement_requests pmr
+    JOIN projects p ON pmr.project_id = p.project_id
+    JOIN users u_req ON pmr.requested_by = u_req.user_id
+    LEFT JOIN employees e_req ON u_req.employee_id = e_req.employee_id
+    LEFT JOIN users u_app ON pmr.approved_by = u_app.user_id
+    LEFT JOIN employees e_app ON u_app.employee_id = e_app.employee_id
+    LEFT JOIN users u_lead ON pmr.team_lead_id = u_lead.user_id
+    LEFT JOIN employees e_lead ON u_lead.employee_id = e_lead.employee_id
+    WHERE pmr.patch_id = p_patch_id;
 END //
 DELIMITER ;
 
--- Get a patch movement request by team lead ID
+-- Get patch movement requests by team lead ID with additional details
 DELIMITER //
 CREATE PROCEDURE sp_GetPatchMovementRequestByTeamLeadId(IN p_team_lead_id INT)
 BEGIN
-    SELECT *
-    FROM patch_movement_requests
-    WHERE team_lead_id = p_team_lead_id;
+    SELECT 
+        pmr.*,
+        p.name AS project_name,
+        CONCAT(u_req.username) AS requester_name,
+        CONCAT(e_req.first_name, ' ', e_req.last_name) AS requester_full_name,
+        CONCAT(u_app.username) AS approved_by_name,
+        CONCAT(e_app.first_name, ' ', e_app.last_name) AS approved_by_full_name
+    FROM patch_movement_requests pmr
+    JOIN projects p ON pmr.project_id = p.project_id
+    JOIN users u_req ON pmr.requested_by = u_req.user_id
+    LEFT JOIN employees e_req ON u_req.employee_id = e_req.employee_id
+    LEFT JOIN users u_app ON pmr.approved_by = u_app.user_id
+    LEFT JOIN employees e_app ON u_app.employee_id = e_app.employee_id
+    WHERE pmr.team_lead_id = p_team_lead_id
+    ORDER BY pmr.created_at DESC;
 END //
 DELIMITER ;
 
+-- Get patch movement requests by user ID (requester) with additional details
+DELIMITER //
+CREATE PROCEDURE sp_GetPatchMovementRequestsByUser(IN p_user_id INT)
+BEGIN
+    SELECT 
+        pmr.*,
+        p.name AS project_name,
+        CONCAT(u_app.username) AS approved_by_name,
+        CONCAT(e_app.first_name, ' ', e_app.last_name) AS approved_by_full_name,
+        CONCAT(u_lead.username) AS team_lead_name,
+        CONCAT(e_lead.first_name, ' ', e_lead.last_name) AS team_lead_full_name
+    FROM patch_movement_requests pmr
+    JOIN projects p ON pmr.project_id = p.project_id
+    LEFT JOIN users u_app ON pmr.approved_by = u_app.user_id
+    LEFT JOIN employees e_app ON u_app.employee_id = e_app.employee_id
+    LEFT JOIN users u_lead ON pmr.team_lead_id = u_lead.user_id
+    LEFT JOIN employees e_lead ON u_lead.employee_id = e_lead.employee_id
+    WHERE pmr.requested_by = p_user_id
+    ORDER BY pmr.created_at DESC;
+END //
+DELIMITER ;
 
 -- Update the status of a patch movement request
 DELIMITER //
@@ -114,6 +178,20 @@ BEGIN
         updated_at = CURRENT_TIMESTAMP
     WHERE patch_id = p_patch_id;
 
-    SELECT * FROM patch_movement_requests WHERE patch_id = p_patch_id;
+    -- Return updated record with details
+    SELECT 
+        pmr.*,
+        p.name AS project_name,
+        CONCAT(u_req.username) AS requester_name,
+        CONCAT(e_req.first_name, ' ', e_req.last_name) AS requester_full_name,
+        CONCAT(u_app.username) AS approved_by_name,
+        CONCAT(e_app.first_name, ' ', e_app.last_name) AS approved_by_full_name
+    FROM patch_movement_requests pmr
+    JOIN projects p ON pmr.project_id = p.project_id
+    JOIN users u_req ON pmr.requested_by = u_req.user_id
+    LEFT JOIN employees e_req ON u_req.employee_id = e_req.employee_id
+    LEFT JOIN users u_app ON pmr.approved_by = u_app.user_id
+    LEFT JOIN employees e_app ON u_app.employee_id = e_app.employee_id
+    WHERE pmr.patch_id = p_patch_id;
 END //
 DELIMITER ;

@@ -158,6 +158,7 @@ BEGIN
         ptm.employee_id,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         e.email AS employee_email,
+        e.phone AS phone_number,
         e.team_id,
         t.name AS team_name,
         ptm.role,

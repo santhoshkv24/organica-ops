@@ -20,23 +20,24 @@ const query = async (sql, params = []) => {
 };
 
 // Call a stored procedure with parameters
+// If the stored procedure returns multiple result sets (tables),
+// this function will return all of them as an array.
+// For backward compatibility, if only one result set is returned, it returns just that set (array of rows).
 const callProcedure = async (procedureName, params = [], connection = null) => {
   const shouldRelease = !connection;
-  
   try {
-    // Get a new connection if one wasn't provided
     if (!connection) {
       connection = await pool.getConnection();
     }
-    
-    // Format the procedure call with the correct number of parameters
     const placeholders = params.map(() => '?').join(', ');
     const sql = `CALL ${procedureName}(${placeholders})`;
-    
-    const [results] = await connection.execute(sql, params);
-    // Stored procedures return an array with the result set(s)
-    // Usually we want the first result set
-    return results[0] || [];
+    const [results] = await connection.query(sql, params);
+    // If results is an array of arrays (multiple tables), return all
+    if (Array.isArray(results) && results.length > 1 && Array.isArray(results[0]) && Array.isArray(results[1])) {
+      return results;
+    }
+    // If only one result set, return just that set (for backward compatibility)
+    return results[0] || results;
   } catch (error) {
     console.error('Stored procedure call error:', {
       procedureName,
@@ -46,7 +47,6 @@ const callProcedure = async (procedureName, params = [], connection = null) => {
     });
     throw error;
   } finally {
-    // Only release the connection if we created it in this function
     if (shouldRelease && connection) {
       connection.release();
     }

@@ -301,3 +301,43 @@ CREATE TABLE `patch_movement_requests` (
   CONSTRAINT `fk_patch_requests_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_patch_requests_requested_by` FOREIGN KEY (`requested_by`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `inventory_loans` (
+  `loan_id` int NOT NULL AUTO_INCREMENT,
+  `project_id` int NOT NULL,
+  `requested_by_user_id` int NOT NULL,
+  `responsible_team_id` int NOT NULL,
+  `purpose` text,
+  `status` enum('Pending Approval','Approved','Rejected','Issued','Partially Returned','Returned','Cancelled') DEFAULT 'Pending Approval',
+  `approved_by_user_id` int DEFAULT NULL,
+  `issued_by_user_id` int DEFAULT NULL,
+  `request_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `approval_date` timestamp NULL DEFAULT NULL,
+  `issued_date` timestamp NULL DEFAULT NULL,
+  `expected_return_date` date NOT NULL,
+  `actual_return_date` timestamp NULL DEFAULT NULL,
+  `remarks` text,
+  PRIMARY KEY (`loan_id`),
+  KEY `project_id` (`project_id`),
+  KEY `requested_by_user_id` (`requested_by_user_id`),
+  KEY `responsible_team_id` (`responsible_team_id`),
+  KEY `approved_by_user_id` (`approved_by_user_id`),
+  KEY `issued_by_user_id` (`issued_by_user_id`),
+  CONSTRAINT `fk_inventory_loans_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`),
+  CONSTRAINT `fk_inventory_loans_requested_by` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`user_id`),
+  CONSTRAINT `fk_inventory_loans_responsible_team` FOREIGN KEY (`responsible_team_id`) REFERENCES `teams` (`team_id`),
+  CONSTRAINT `fk_inventory_loans_approved_by` FOREIGN KEY (`approved_by_user_id`) REFERENCES `users` (`user_id`),
+  CONSTRAINT `fk_inventory_loans_issued_by` FOREIGN KEY (`issued_by_user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `inventory_loan_items` (
+  `loan_item_id` int NOT NULL AUTO_INCREMENT,
+  `loan_id` int NOT NULL,
+  `item_name` varchar(255) NOT NULL,
+  `quantity_requested` int NOT NULL,
+  `quantity_issued` int DEFAULT '0',
+  `quantity_returned` int DEFAULT '0',
+  PRIMARY KEY (`loan_item_id`),
+  KEY `loan_id` (`loan_id`),
+  CONSTRAINT `fk_inventory_loan_items_loan` FOREIGN KEY (`loan_id`) REFERENCES `inventory_loans` (`loan_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

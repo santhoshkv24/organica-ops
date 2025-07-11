@@ -13,9 +13,12 @@ router.get('/project/:project_id', protect, patchMovementController.getPatchMove
 router.get('/:patch_id', protect, patchMovementController.getPatchMovementRequestById);
 
 // Update the status of a patch movement request
-router.patch('/:patch_id/status', protect, patchMovementController.updatePatchMovementRequestStatus);
+router.put('/:patch_id/status', protect, patchMovementController.updatePatchMovementRequestStatus);
 
 // Get patch movement requests by team lead ID
 router.get('/team-lead/:teamLeadId', protect, patchMovementController.getPatchMovementRequestByTeamLeadId);
+
+// Get patch movement requests by user (requester)
+router.get('/user/:userId?', protect, patchMovementController.getPatchMovementRequestsByUser);
 
 module.exports = router;
